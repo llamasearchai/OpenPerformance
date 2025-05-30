@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Main ML Performance API
+  mlperf-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://mlperf:mlperf_password@postgres:5432/mlperf
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+      - ./benchmarks:/app/benchmarks
+      - ./results:/app/results
+    depends_on:
+      - redis
+      - postgres
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["uvicorn", "python.mlperf.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Redis for caching and job queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for persistent data
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mlperf
+      - POSTGRES_USER=mlperf
+      - POSTGRES_PASSWORD=mlperf_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Worker for background processing
+  mlperf-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://mlperf:mlperf_password@postgres:5432/mlperf
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+      - ./benchmarks:/app/benchmarks
+      - ./results:/app/results
+    depends_on:
+      - redis
+      - postgres
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["python", "-m", "python.mlperf.workers.main"]
+
+  # Monitoring dashboard (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - mlperf-api
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+
+volumes:
+  redis_data:
+  postgres_data:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  default:
+    driver: bridge 

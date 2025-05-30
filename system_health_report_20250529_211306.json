@@ -1,0 +1,278 @@
+{
+  "overall_status": "PERFORMANCE_ISSUES",
+  "components": [
+    {
+      "name": "System Architecture",
+      "status": "DEGRADED",
+      "details": {
+        "core_modules_status": "complete",
+        "configuration_files_status": "complete",
+        "infrastructure_status": "incomplete",
+        "infrastructure_missing": [
+          "docs/"
+        ],
+        "validation_scripts_status": "complete"
+      },
+      "performance_metrics": {
+        "structure_completeness_percent": 93.33333333333333,
+        "total_components": 15,
+        "present_components": 14
+      },
+      "timestamp": 1748578379.9406662,
+      "error_details": null
+    },
+    {
+      "name": "Python Runtime Environment",
+      "status": "OPERATIONAL",
+      "details": {
+        "python_version": "3.11.6",
+        "fastapi_status": "available",
+        "uvicorn_status": "available",
+        "typer_status": "available",
+        "rich_status": "available",
+        "numpy_status": "available",
+        "pydantic_status": "available",
+        "sqlalchemy_status": "available",
+        "redis_status": "available",
+        "celery_status": "available"
+      },
+      "performance_metrics": {
+        "avg_import_time_ms": 91.28393067253961,
+        "total_dependencies_checked": 9,
+        "dependencies_available": 9
+      },
+      "timestamp": 1748578380.761614,
+      "error_details": null
+    },
+    {
+      "name": "API Service Health",
+      "status": "OPERATIONAL",
+      "details": {
+        "existing_server": "operational",
+        "health_response": {
+          "status": "healthy",
+          "timestamp": 1748578380.770907,
+          "components": {
+            "gpu_detection": false,
+            "psutil_available": true
+          }
+        },
+        "endpoint_performance": {
+          "/system/metrics": {
+            "status_code": 200,
+            "response_time_ms": 105.14307022094727,
+            "content_length": 279
+          },
+          "/system/hardware": {
+            "status_code": 200,
+            "response_time_ms": 134.42587852478027,
+            "content_length": 337
+          },
+          "/": {
+            "status_code": 200,
+            "response_time_ms": 17.0440673828125,
+            "content_length": 206
+          }
+        }
+      },
+      "performance_metrics": {
+        "api_response_time_ms": 3.044
+      },
+      "timestamp": 1748578381.028278,
+      "error_details": null
+    },
+    {
+      "name": "Hardware Detection Capabilities",
+      "status": "OPERATIONAL",
+      "details": {
+        "gpu_detection_time_ms": 0.1819133758544922,
+        "detected_gpus": 0,
+        "hardware_mode": "cpu_only",
+        "system_cpu_cores": 16,
+        "system_memory_gb": 128.0,
+        "cpu_usage_percent": 23.0
+      },
+      "performance_metrics": {
+        "total_compute_units": 0,
+        "total_memory_gb": 0,
+        "detection_time_ms": 0.1819133758544922,
+        "system_monitoring_available": 1
+      },
+      "timestamp": 1748578381.1594582,
+      "error_details": null
+    },
+    {
+      "name": "Container Orchestration",
+      "status": "OPERATIONAL",
+      "details": {
+        "docker_version": "Docker version 27.5.1, build 9f9e405801",
+        "docker_status": "available",
+        "docker_compose_version": "Docker Compose version 2.33.0",
+        "docker_compose_status": "available",
+        "container_configurations": {
+          "docker/Dockerfile": "present",
+          "docker/Dockerfile_size": 1141,
+          "docker-compose.yml": "present",
+          "docker-compose.yml_size": 2594,
+          "docker-compose.override.yml": "present",
+          "docker-compose.override.yml_size": 2391
+        }
+      },
+      "performance_metrics": {
+        "container_tools_available": 2,
+        "container_readiness_score": 100.0,
+        "configuration_completeness": 100.0
+      },
+      "timestamp": 1748578381.29904,
+      "error_details": null
+    },
+    {
+      "name": "Core Module Integrity",
+      "status": "OPERATIONAL",
+      "details": {
+        "import_results": {
+          "python.mlperf.hardware.gpu": "success",
+          "python.mlperf.optimization.distributed": "success",
+          "python.mlperf.utils.logging": "success",
+          "python.mlperf.utils.config": "success",
+          "python.mlperf.api.main": "success",
+          "python.mlperf.cli.main": "success"
+        }
+      },
+      "performance_metrics": {
+        "import_success_rate": 100.0,
+        "avg_import_time_ms": 269.63480313618976,
+        "total_modules_tested": 6
+      },
+      "timestamp": 1748578381.558176,
+      "error_details": null
+    },
+    {
+      "name": "Advanced ML Dependencies",
+      "status": "OPERATIONAL",
+      "details": {
+        "torch_version": "2.6.0",
+        "torch_description": "PyTorch deep learning framework",
+        "tensorflow_status": "not available (optional)",
+        "jax_version": "0.5.3",
+        "jax_description": "JAX automatic differentiation",
+        "transformers_version": "4.52.2",
+        "transformers_description": "Hugging Face transformers library",
+        "accelerate_version": "1.5.2",
+        "accelerate_description": "Hugging Face training acceleration",
+        "deepspeed_status": "not available (optional)",
+        "psutil_version": "7.0.0",
+        "psutil_description": "System monitoring utilities",
+        "nvidia-ml-py_status": "not available (optional)",
+        "openai_version": "1.3.8",
+        "openai_description": "OpenAI API integration",
+        "anthropic_version": "0.51.0",
+        "anthropic_description": "Anthropic AI integration"
+      },
+      "performance_metrics": {
+        "framework_coverage_percent": 70.0,
+        "available_frameworks": 7,
+        "avg_framework_load_time_ms": 308.10676302228654
+      },
+      "timestamp": 1748578382.0972521,
+      "error_details": null
+    },
+    {
+      "name": "Test Suite Integrity",
+      "status": "DEGRADED",
+      "details": {
+        "test_execution_output": "ersions/3.11.6/lib/python3.11/contextlib.py:505: in enter_context\n    result = _enter(cm)\n../.pyenv/versions/3.11.6/lib/python3.11/unittest/mock.py:1427: in __enter__\n    self.target = self.getter()\n../.pyenv/versions/3.11.6/lib/python3.11/pkgutil.py:700: in resolve_name\n    mod = importlib.import_module(modname)\n../.pyenv/versions/3.11.6/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\nE   ModuleNotFoundError: No module named 'pynvml'\n\n---------- coverage: platform darwin, python 3.11.6-final-0 ----------\n\n=========================== short test summary info ============================\nFAILED tests/test_distributed.py::TestMemoryTracker::test_pytorch_memory_no_cuda\nFAILED tests/test_hardware.py::TestGetGPUInfo::test_get_gpu_info_no_pynvml_available\nFAILED tests/test_hardware.py::TestGetGPUInfo::test_get_gpu_info_nvidia_ml_exception\n========================= 3 failed, 33 passed in 2.58s =========================\n",
+        "test_return_code": 1,
+        "test_summary": {
+          "summary_line": "========================= 3 failed, 33 passed in 2.58s ========================="
+        },
+        "test_suite_status": "some_tests_failed",
+        "stderr_output": "ted)\n  self.warn(f\"Module {pkg} was never imported.\", slug=\"module-not-imported\")\n/Users/nemesis/.pyenv/versions/3.11.6/lib/python3.11/site-packages/coverage/control.py:907: CoverageWarning: No data was collected. (no-data-collected)\n  self._warn(\"No data was collected.\", slug=\"no-data-collected\")\n/Users/nemesis/.pyenv/versions/3.11.6/lib/python3.11/site-packages/pytest_cov/plugin.py:312: CovReportWarning: Failed to generate report: No data to report.\n\n  warnings.warn(CovReportWarning(message))\n"
+      },
+      "performance_metrics": {
+        "test_execution_time_seconds": 3.5415680408477783,
+        "test_suite_return_code": 1
+      },
+      "timestamp": 1748578384.840745,
+      "error_details": null
+    },
+    {
+      "name": "CLI Interface Functionality",
+      "status": "OPERATIONAL",
+      "details": {
+        "info_command_format": "non_json_output",
+        "command_results": {
+          "info_--format_json": {
+            "return_code": 0,
+            "execution_time_ms": 2569.5159435272217,
+            "stdout_length": 445,
+            "stderr_length": 222
+          },
+          "--version": {
+            "return_code": 2,
+            "execution_time_ms": 1360.8472347259521,
+            "stdout_length": 0,
+            "stderr_length": 607
+          },
+          "--help": {
+            "return_code": 0,
+            "execution_time_ms": 1406.2011241912842,
+            "stdout_length": 1741,
+            "stderr_length": 222
+          }
+        }
+      },
+      "performance_metrics": {
+        "avg_command_execution_time_ms": 1778.854767481486,
+        "total_commands_tested": 3,
+        "command_success_rate": 66.66666666666666
+      },
+      "timestamp": 1748578386.364995,
+      "error_details": null
+    }
+  ],
+  "performance_summary": {
+    "total_execution_time_seconds": 6.425842761993408,
+    "components_checked": 9,
+    "overall_performance_score": 88.3119594314952,
+    "detailed_metrics": {
+      "system_architecture_structure_completeness_percent": 93.33333333333333,
+      "system_architecture_total_components": 15,
+      "system_architecture_present_components": 14,
+      "python_runtime_environment_avg_import_time_ms": 91.28393067253961,
+      "python_runtime_environment_total_dependencies_checked": 9,
+      "python_runtime_environment_dependencies_available": 9,
+      "api_service_health_api_response_time_ms": 3.044,
+      "hardware_detection_capabilities_total_compute_units": 0,
+      "hardware_detection_capabilities_total_memory_gb": 0,
+      "hardware_detection_capabilities_detection_time_ms": 0.1819133758544922,
+      "hardware_detection_capabilities_system_monitoring_available": 1,
+      "container_orchestration_container_tools_available": 2,
+      "container_orchestration_container_readiness_score": 100.0,
+      "container_orchestration_configuration_completeness": 100.0,
+      "core_module_integrity_import_success_rate": 100.0,
+      "core_module_integrity_avg_import_time_ms": 269.63480313618976,
+      "core_module_integrity_total_modules_tested": 6,
+      "advanced_ml_dependencies_framework_coverage_percent": 70.0,
+      "advanced_ml_dependencies_available_frameworks": 7,
+      "advanced_ml_dependencies_avg_framework_load_time_ms": 308.10676302228654,
+      "test_suite_integrity_test_execution_time_seconds": 3.5415680408477783,
+      "test_suite_integrity_test_suite_return_code": 1,
+      "cli_interface_functionality_avg_command_execution_time_ms": 1778.854767481486,
+      "cli_interface_functionality_total_commands_tested": 3,
+      "cli_interface_functionality_command_success_rate": 66.66666666666666
+    }
+  },
+  "recommendations": [
+    "PERFORMANCE: 2 components show degraded performance. Optimization recommended for production deployment."
+  ],
+  "generated_at": "2025-05-29T21:13:06.365900",
+  "system_info": {
+    "python_version": "3.11.6 (main, Oct 19 2024, 11:43:11) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "platform": "darwin",
+    "working_directory": "/Users/nemesis/OpenPerformance",
+    "environment_variables": {
+      "PATH": "/Users/nemesis/.pyenv/versions/3.11.6/bin:/opt/quantum/bin:/usr/local/opt/llvm/bin:/Users/nemesis/.cargo/bin:/Users/nemesis/.cargo/bin:/Users/nemesis/.pyenv/versions/3.11.6/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin://Applications/Topaz Photo AI.app/Contents/Resources/bin:/usr/local/go/bin:/Users/nemesis/.pyenv/versions/3.11.6/bin:/opt/quantum/bin:/usr/local/opt/llvm/bin:/Users/nemesis/.cargo/bin:/opt/miniconda3/bin:/opt/miniconda3/condabin:/Users/nemesis/.local/bin:/Users/nemesis/.orbstack/bin:/Users/nemesis/.local/bin:/Users/nemesis/.orbstack/bin:/Users/nemesis/.local/bin"
+    }
+  }
+}

@@ -1,0 +1,324 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-performance-platform
+  labels:
+    name: ml-performance-platform
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: namespace
+    app.kubernetes.io/part-of: ml-performance-platform
+    app.kubernetes.io/managed-by: kubernetes
+    app.kubernetes.io/version: "2.1.0"
+    # Security and monitoring labels
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    # Istio service mesh
+    istio-injection: enabled
+    # GPU scheduling
+    nvidia.com/gpu-scheduling: enabled
+    # Performance monitoring
+    monitoring: enabled
+    alerting: enabled
+  annotations:
+    description: "ML Performance Engineering Platform - Enterprise-grade ML optimization and monitoring"
+    contact: "ml-performance-team@company.com"
+    documentation: "https://github.com/llamasearchai/OpenPerformance"
+    runbook: "https://runbooks.company.com/ml-performance-platform"
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ml-performance-platform-quota
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: resource-quota
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "50"
+    requests.memory: 200Gi
+    limits.cpu: "100"
+    limits.memory: 400Gi
+    
+    # GPU resources
+    requests.nvidia.com/gpu: "20"
+    limits.nvidia.com/gpu: "20"
+    
+    # Storage resources
+    requests.storage: 1Ti
+    persistentvolumeclaims: "50"
+    
+    # Object counts
+    pods: "100"
+    replicationcontrollers: "20"
+    services: "20"
+    secrets: "50"
+    configmaps: "50"
+    
+    # Network resources
+    services.loadbalancers: "5"
+    services.nodeports: "10"
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ml-performance-platform-limits
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: limit-range
+spec:
+  limits:
+  # Container limits
+  - default:
+      cpu: "2"
+      memory: 4Gi
+      nvidia.com/gpu: "1"
+    defaultRequest:
+      cpu: "500m"
+      memory: 1Gi
+    type: Container
+  
+  # Pod limits
+  - max:
+      cpu: "16"
+      memory: 64Gi
+      nvidia.com/gpu: "8"
+    min:
+      cpu: "100m"
+      memory: 128Mi
+    type: Pod
+  
+  # PVC limits
+  - max:
+      storage: 100Gi
+    min:
+      storage: 1Gi
+    type: PersistentVolumeClaim
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-performance-platform-network-policy
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  # Allow ingress from same namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ml-performance-platform
+  
+  # Allow ingress from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  
+  # Allow ingress from istio-system
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  
+  # Allow specific ports
+    ports:
+    - protocol: TCP
+      port: 8000  # API server
+    - protocol: TCP
+      port: 9090  # Metrics
+    - protocol: TCP
+      port: 15090 # Istio pilot
+  
+  egress:
+  # Allow egress to same namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: ml-performance-platform
+  
+  # Allow egress to kube-system (DNS)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow egress to istio-system
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  
+  # Allow HTTPS egress for external APIs
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ml-performance-platform
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: service-account
+  annotations:
+    # AWS IAM role for service accounts (if using AWS)
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/ml-performance-platform-role
+    # Azure workload identity (if using Azure)
+    azure.workload.identity/client-id: "client-id"
+automountServiceAccountToken: true
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ml-performance-platform
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: rbac
+rules:
+# Pods management
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/status"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Services management
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# ConfigMaps and Secrets
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# PersistentVolumeClaims
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Deployments and ReplicaSets
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# HorizontalPodAutoscaler
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Custom Resource Definitions (for ML workloads)
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+
+# Metrics and monitoring
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ml-performance-platform
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: rbac
+subjects:
+- kind: ServiceAccount
+  name: ml-performance-platform
+  namespace: ml-performance-platform
+roleRef:
+  kind: Role
+  name: ml-performance-platform
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ml-performance-platform-secrets
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: secrets
+type: Opaque
+data:
+  # Base64 encoded secrets - these should be managed by external secret management
+  openai-api-key: ""  # Add your OpenAI API key here
+  anthropic-api-key: ""  # Add your Anthropic API key here
+  database-password: ""  # Database password
+  redis-password: ""  # Redis password
+  jwt-secret: ""  # JWT signing secret
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-performance-platform-config
+  namespace: ml-performance-platform
+  labels:
+    app.kubernetes.io/name: ml-performance-platform
+    app.kubernetes.io/component: config
+data:
+  # Application configuration
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  
+  # Performance monitoring configuration
+  ENABLE_PERFORMANCE_MONITORING: "true"
+  METRICS_COLLECTION_INTERVAL: "10"
+  PERFORMANCE_THRESHOLD: "5"
+  
+  # Distributed training configuration
+  ENABLE_DISTRIBUTED_TRAINING: "true"
+  DEFAULT_BACKEND: "nccl"
+  COMMUNICATION_TIMEOUT: "30"
+  
+  # Security configuration
+  ENABLE_AUTHENTICATION: "true"
+  TOKEN_EXPIRY: "3600"
+  ENABLE_AUDIT_LOGGING: "true"
+  
+  # Database configuration
+  DATABASE_HOST: "ml-performance-platform-postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "mlperformance"
+  
+  # Redis configuration
+  REDIS_HOST: "ml-performance-platform-redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # Monitoring configuration
+  PROMETHEUS_ENDPOINT: "http://prometheus:9090"
+  GRAFANA_ENDPOINT: "http://grafana:3000"
+  JAEGER_ENDPOINT: "http://jaeger:14268" 

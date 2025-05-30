@@ -1,0 +1,60 @@
+{
+  "timestamp": "2025-05-29T20:44:24.162194",
+  "summary": {
+    "passed": 10,
+    "failed": 1,
+    "warnings": 0,
+    "success_rate": 90.9090909090909
+  },
+  "results": {
+    "Python Environment": {
+      "status": "PASSED",
+      "timestamp": 1748576652.892483
+    },
+    "Optional Dependencies": {
+      "status": "PASSED",
+      "timestamp": 1748576653.7179708
+    },
+    "Project Structure": {
+      "status": "PASSED",
+      "timestamp": 1748576653.7180579
+    },
+    "Core Modules": {
+      "status": "PASSED",
+      "timestamp": 1748576653.916419
+    },
+    "Hardware Detection": {
+      "status": "PASSED",
+      "timestamp": 1748576653.916532
+    },
+    "Configuration": {
+      "status": "PASSED",
+      "timestamp": 1748576653.9165912
+    },
+    "Verification Script": {
+      "status": "PASSED",
+      "timestamp": 1748576658.576879
+    },
+    "CLI Functionality": {
+      "status": "PASSED",
+      "timestamp": 1748576661.0678542
+    },
+    "API Server": {
+      "status": "PASSED",
+      "timestamp": 1748576661.074794
+    },
+    "Docker Setup": {
+      "status": "PASSED",
+      "timestamp": 1748576661.1644511
+    },
+    "Test Suite": {
+      "status": "FAILED",
+      "timestamp": 1748576664.162136
+    }
+  },
+  "platform_info": {
+    "python_version": "3.11.6 (main, Oct 19 2024, 11:43:11) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "platform": "darwin",
+    "working_directory": "/Users/nemesis/OpenPerformance"
+  }
+}

@@ -1,0 +1,93 @@
+version: '3.8'
+
+# Development override for docker-compose.yml
+# This file automatically extends docker-compose.yml with development-specific settings
+
+services:
+  mlperf-api:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - API_RELOAD=true
+      - API_DEBUG=true
+      - ENABLE_PROFILING=true
+    volumes:
+      - ./logs:/app/logs
+      - ./cache:/cache
+      - ./outputs:/app/outputs
+      - ./config:/app/config
+    ports:
+      - "8000:8000"
+      - "8080:8080"  # Additional debug port
+    command: uvicorn python.mlperf.api.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    restart: unless-stopped
+
+  mlperf-worker:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENABLE_PROFILING=true
+    volumes:
+      - ./logs:/app/logs
+      - ./cache:/cache
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+
+  redis:
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  postgres:
+    environment:
+      - POSTGRES_DB=mlperf_dev
+      - POSTGRES_USER=mlperf_dev
+      - POSTGRES_PASSWORD=mlperf_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
+
+  prometheus:
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_dev_data:/prometheus
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_dev_data:
+    driver: local
+  grafana_dev_data:
+    driver: local
+  prometheus_dev_data:
+    driver: local
+
+networks:
+  default:
+    name: mlperf-dev-network 

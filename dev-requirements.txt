@@ -1,0 +1,11 @@
+pytest
+pytest-benchmark
+pytest-mock
+black
+isort
+mypy
+flake8
+sphinx
+sphinx-rtd-theme
+jupyterlab
+coverage 

@@ -1,0 +1,492 @@
+name: Performance Monitoring & Benchmarking
+
+on:
+  schedule:
+    # Daily performance monitoring
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      benchmark_type:
+        description: 'Type of benchmark to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - training
+        - inference
+        - distributed
+        - memory
+      models:
+        description: 'Models to benchmark (comma-separated)'
+        required: false
+        default: 'resnet50,bert-base,gpt2-small'
+        type: string
+      frameworks:
+        description: 'Frameworks to test'
+        required: false
+        default: 'pytorch,tensorflow'
+        type: choice
+        options:
+        - pytorch,tensorflow
+        - pytorch
+        - tensorflow
+      duration_minutes:
+        description: 'Benchmark duration in minutes'
+        required: false
+        default: 30
+        type: number
+
+env:
+  PYTHON_VERSION: '3.11'
+  BENCHMARK_RESULTS_DIR: 'results/performance-monitoring'
+  BASELINE_BRANCH: 'main'
+
+jobs:
+  # =======================
+  # Training Benchmarks
+  # =======================
+  training-benchmarks:
+    name: 🏋️ Training Performance Benchmarks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        model: [resnet50, bert-base, gpt2-small]
+        framework: [pytorch, tensorflow]
+        batch_size: [16, 32, 64]
+        precision: [fp32, fp16]
+        exclude:
+          # Exclude some combinations to reduce matrix size
+          - model: gpt2-small
+            batch_size: 64
+          - framework: tensorflow
+            precision: fp16
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pytest-benchmark psutil memory-profiler
+        pip install torch torchvision tensorflow transformers
+        pip install -r requirements.txt --no-deps || true
+
+    - name: Create benchmark environment
+      run: |
+        mkdir -p ${{ env.BENCHMARK_RESULTS_DIR }}/training
+        echo "CUDA_VISIBLE_DEVICES=-1" >> $GITHUB_ENV  # CPU-only for CI
+
+    - name: Run Training Benchmark - ${{ matrix.model }}
+      run: |
+        python scripts/benchmarks/training_benchmark.py \
+          --model ${{ matrix.model }} \
+          --framework ${{ matrix.framework }} \
+          --batch-size ${{ matrix.batch_size }} \
+          --precision ${{ matrix.precision }} \
+          --duration ${{ github.event.inputs.duration_minutes || 5 }} \
+          --output ${{ env.BENCHMARK_RESULTS_DIR }}/training/training-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.batch_size }}-${{ matrix.precision }}.json
+
+    - name: Upload Training Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: training-results-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.batch_size }}-${{ matrix.precision }}
+        path: ${{ env.BENCHMARK_RESULTS_DIR }}/training/
+
+  # =======================
+  # Inference Benchmarks
+  # =======================
+  inference-benchmarks:
+    name: ⚡ Inference Performance Benchmarks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        model: [resnet50, bert-base, gpt2-small]
+        framework: [pytorch, tensorflow]
+        batch_size: [1, 8, 16, 32]
+        precision: [fp32, fp16]
+        exclude:
+          - framework: tensorflow
+            precision: fp16
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pytest-benchmark psutil memory-profiler
+        pip install torch torchvision tensorflow transformers
+        pip install -r requirements.txt --no-deps || true
+
+    - name: Create benchmark environment
+      run: |
+        mkdir -p ${{ env.BENCHMARK_RESULTS_DIR }}/inference
+        echo "CUDA_VISIBLE_DEVICES=-1" >> $GITHUB_ENV
+
+    - name: Run Inference Benchmark - ${{ matrix.model }}
+      run: |
+        python scripts/benchmarks/inference_benchmark.py \
+          --model ${{ matrix.model }} \
+          --framework ${{ matrix.framework }} \
+          --batch-size ${{ matrix.batch_size }} \
+          --precision ${{ matrix.precision }} \
+          --samples 1000 \
+          --warmup 100 \
+          --output ${{ env.BENCHMARK_RESULTS_DIR }}/inference/inference-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.batch_size }}-${{ matrix.precision }}.json
+
+    - name: Upload Inference Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: inference-results-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.batch_size }}-${{ matrix.precision }}
+        path: ${{ env.BENCHMARK_RESULTS_DIR }}/inference/
+
+  # ==========================
+  # Distributed Benchmarks
+  # ==========================
+  distributed-benchmarks:
+    name: 🌐 Distributed Performance Benchmarks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nodes: [1, 2, 4]
+        model: [resnet50, bert-base]
+        framework: [pytorch]
+        communication: [nccl, gloo]
+        exclude:
+          - nodes: 1
+            communication: nccl
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pytest-benchmark psutil memory-profiler
+        pip install torch torchvision
+        pip install -r requirements.txt --no-deps || true
+
+    - name: Create distributed benchmark environment
+      run: |
+        mkdir -p ${{ env.BENCHMARK_RESULTS_DIR }}/distributed
+        echo "CUDA_VISIBLE_DEVICES=-1" >> $GITHUB_ENV
+
+    - name: Simulate Distributed Training Benchmark
+      run: |
+        python scripts/benchmarks/distributed_benchmark.py \
+          --model ${{ matrix.model }} \
+          --framework ${{ matrix.framework }} \
+          --nodes ${{ matrix.nodes }} \
+          --communication ${{ matrix.communication }} \
+          --simulate \
+          --duration ${{ github.event.inputs.duration_minutes || 5 }} \
+          --output ${{ env.BENCHMARK_RESULTS_DIR }}/distributed/distributed-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.nodes }}nodes-${{ matrix.communication }}.json
+
+    - name: Upload Distributed Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: distributed-results-${{ matrix.model }}-${{ matrix.framework }}-${{ matrix.nodes }}nodes-${{ matrix.communication }}
+        path: ${{ env.BENCHMARK_RESULTS_DIR }}/distributed/
+
+  # =======================
+  # Memory Profiling
+  # =======================
+  memory-profiling:
+    name: 🧠 Memory Usage Profiling
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workload: [training, inference]
+        model: [resnet50, bert-base]
+        framework: [pytorch, tensorflow]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install memory-profiler psutil matplotlib
+        pip install torch torchvision tensorflow transformers
+        pip install -r requirements.txt --no-deps || true
+
+    - name: Create memory profiling environment
+      run: |
+        mkdir -p ${{ env.BENCHMARK_RESULTS_DIR }}/memory
+        echo "CUDA_VISIBLE_DEVICES=-1" >> $GITHUB_ENV
+
+    - name: Run Memory Profiling - ${{ matrix.workload }}
+      run: |
+        python scripts/benchmarks/memory_profiling.py \
+          --workload ${{ matrix.workload }} \
+          --model ${{ matrix.model }} \
+          --framework ${{ matrix.framework }} \
+          --duration ${{ github.event.inputs.duration_minutes || 5 }} \
+          --output ${{ env.BENCHMARK_RESULTS_DIR }}/memory/memory-${{ matrix.workload }}-${{ matrix.model }}-${{ matrix.framework }}.json
+
+    - name: Upload Memory Profiling Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: memory-results-${{ matrix.workload }}-${{ matrix.model }}-${{ matrix.framework }}
+        path: ${{ env.BENCHMARK_RESULTS_DIR }}/memory/
+
+  # ==========================
+  # Performance Analysis
+  # ==========================
+  performance-analysis:
+    name: 📊 Performance Analysis & Reporting
+    runs-on: ubuntu-latest
+    needs: [training-benchmarks, inference-benchmarks, distributed-benchmarks, memory-profiling]
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install analysis dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pandas numpy matplotlib seaborn plotly
+        pip install scikit-learn scipy
+        pip install -r requirements.txt --no-deps || true
+
+    - name: Download all benchmark results
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ env.BENCHMARK_RESULTS_DIR }}/
+
+    - name: Organize benchmark data
+      run: |
+        find ${{ env.BENCHMARK_RESULTS_DIR }}/ -name "*.json" -exec cp {} ${{ env.BENCHMARK_RESULTS_DIR }}/ \;
+        ls -la ${{ env.BENCHMARK_RESULTS_DIR }}/
+
+    - name: Run Performance Analysis
+      run: |
+        python tools/performance_analysis.py \
+          --input-dir ${{ env.BENCHMARK_RESULTS_DIR }} \
+          --output performance-analysis.html \
+          --format html \
+          --include-trends \
+          --include-recommendations
+
+    - name: Generate Performance Dashboard
+      run: |
+        python scripts/generate_performance_dashboard.py \
+          --input-dir ${{ env.BENCHMARK_RESULTS_DIR }} \
+          --output performance-dashboard.html \
+          --include-interactive-plots
+
+    - name: Statistical Regression Analysis
+      run: |
+        python scripts/statistical_analysis.py \
+          --input-dir ${{ env.BENCHMARK_RESULTS_DIR }} \
+          --baseline-branch ${{ env.BASELINE_BRANCH }} \
+          --output regression-analysis.json \
+          --confidence-level 0.95
+
+    - name: Generate Performance Alerts
+      run: |
+        python scripts/performance_alerts.py \
+          --input regression-analysis.json \
+          --threshold-degradation 10 \
+          --output performance-alerts.json
+
+    - name: ML-based Performance Analysis
+      run: |
+        python scripts/ml_performance_analysis.py \
+          --input-dir ${{ env.BENCHMARK_RESULTS_DIR }} \
+          --output ml-insights.json \
+          --models isolation_forest,dbscan \
+          --features throughput,latency,memory_usage
+
+    - name: Upload Analysis Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-analysis
+        path: |
+          performance-analysis.html
+          performance-dashboard.html
+          regression-analysis.json
+          performance-alerts.json
+          ml-insights.json
+
+  # ========================
+  # Baseline Storage
+  # ========================
+  baseline-update:
+    name: 📈 Baseline Performance Update
+    runs-on: ubuntu-latest
+    needs: [performance-analysis]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download analysis results
+      uses: actions/download-artifact@v4
+      with:
+        name: performance-analysis
+        path: analysis/
+
+    - name: Update performance baselines
+      run: |
+        mkdir -p .github/performance-baselines/
+        cp analysis/regression-analysis.json .github/performance-baselines/baseline-$(date +%Y%m%d).json
+        
+        # Keep only last 30 baselines
+        ls -t .github/performance-baselines/baseline-*.json | tail -n +31 | xargs rm -f || true
+
+    - name: Commit baseline updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .github/performance-baselines/
+        git commit -m "Update performance baselines - $(date)" || exit 0
+        git push
+
+  # ========================
+  # Performance Notifications
+  # ========================
+  notifications:
+    name: 📢 Performance Notifications
+    runs-on: ubuntu-latest
+    needs: [performance-analysis]
+    if: always()
+
+    steps:
+    - name: Download analysis results
+      uses: actions/download-artifact@v4
+      with:
+        name: performance-analysis
+        path: analysis/
+
+    - name: Check for performance regressions
+      id: regression-check
+      run: |
+        if [ -f "analysis/performance-alerts.json" ]; then
+          ALERT_COUNT=$(jq '.alerts | length' analysis/performance-alerts.json)
+          echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ "$ALERT_COUNT" -gt 0 ]; then
+            echo "has_regressions=true" >> $GITHUB_OUTPUT
+            jq -r '.alerts[] | "- " + .message' analysis/performance-alerts.json > alert_summary.txt
+          else
+            echo "has_regressions=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "has_regressions=false" >> $GITHUB_OUTPUT
+          echo "alert_count=0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create performance issue
+      if: steps.regression-check.outputs.has_regressions == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const alertSummary = fs.readFileSync('alert_summary.txt', 'utf8');
+          
+          const title = `🚨 Performance Regression Detected - ${new Date().toISOString().split('T')[0]}`;
+          const body = `## Performance Regression Alert
+          
+          **Alert Count**: ${{ steps.regression-check.outputs.alert_count }}
+          
+          ### Detected Issues:
+          ${alertSummary}
+          
+          ### Analysis Details
+          - **Workflow Run**: ${{ github.run_id }}
+          - **Commit**: ${{ github.sha }}
+          - **Branch**: ${{ github.ref }}
+          - **Trigger**: ${{ github.event_name }}
+          
+          ### Next Steps
+          1. Review the performance analysis artifacts
+          2. Investigate the root cause of performance degradation
+          3. Implement optimizations if necessary
+          4. Re-run benchmarks to validate improvements
+          
+          ### Artifacts
+          - [Performance Analysis Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - [Interactive Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ---
+          *This issue was automatically generated by the Performance Monitoring workflow.*`;
+          
+          // Check if a similar issue already exists
+          const issues = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: 'performance,regression,automated'
+          });
+          
+          const existingIssue = issues.data.find(issue => 
+            issue.title.includes('Performance Regression Detected') &&
+            issue.created_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+          );
+          
+          if (!existingIssue) {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['performance', 'regression', 'automated', 'priority-high']
+            });
+          }
+
+    - name: Send Slack notification
+      if: steps.regression-check.outputs.has_regressions == 'true'
+      run: |
+        echo "🚨 Performance regression detected!"
+        echo "Alert count: ${{ steps.regression-check.outputs.alert_count }}"
+        echo "A GitHub issue has been created for tracking."
+
+    - name: Performance summary
+      run: |
+        echo "## Performance Monitoring Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Workflow**: Performance Monitoring" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Regressions**: ${{ steps.regression-check.outputs.has_regressions }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Alert Count**: ${{ steps.regression-check.outputs.alert_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+        echo "- Performance Analysis Report" >> $GITHUB_STEP_SUMMARY
+        echo "- Interactive Performance Dashboard" >> $GITHUB_STEP_SUMMARY
+        echo "- Statistical Regression Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "- ML-based Performance Insights" >> $GITHUB_STEP_SUMMARY 
