@@ -1,120 +1,119 @@
-# 🚀 ML Performance Platform - Quick Start
+# ML Performance Platform - Quick Start
 
-## 30-Second Demo
+Welcome to the ML Performance Engineering Platform! This guide will get you up and running in minutes.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- 4GB+ RAM recommended
+- Optional: NVIDIA GPU for advanced profiling
+
+## Installation
+
+### 1. Clone the Repository
+
 ```bash
-# 1. Run comprehensive demo
-python test_benchmark_demo.py
-
-# 2. Get system info
-python -m python.mlperf.cli.main info
-
-# 3. Start API server
-uvicorn python.mlperf.api.main:app --reload &
-
-# 4. Test API endpoint
-curl http://localhost:8000/system/metrics
+git clone https://github.com/llamasearchai/OpenPerformance.git
+cd OpenPerformance
 ```
 
-## 🎯 Core Commands
+### 2. Install Dependencies
 
-### CLI Interface
 ```bash
-# System information
-python -m python.mlperf.cli.main info --format json
+# Install Python dependencies
+pip install -r requirements.txt
 
-# Run benchmark
-python -m python.mlperf.cli.main benchmark \
-  --framework pytorch \
-  --batch-size 32 \
-  --iterations 100
-
-# Profile script
-python -m python.mlperf.cli.main profile your_script.py
-
-# Optimize configuration
-python -m python.mlperf.cli.main optimize config.json
+# Optional: Install development dependencies
+pip install -r dev-requirements.txt
 ```
 
-### API Endpoints
+### 3. Configure Environment
+
 ```bash
-# System metrics
+# Copy configuration template
+cp config.env.example config.env
+
+# Edit configuration (optional)
+nano config.env
+```
+
+## Quick Start
+
+### Start the Platform
+
+```bash
+# Start all services
+python start_platform.py
+
+# Or use the convenience script
+./scripts/setup.sh
+```
+
+### Access the Web Interface
+
+Open your browser to `http://localhost:8000`
+
+### Run Your First Benchmark
+
+```bash
+# Run a simple training benchmark
+python -m mlperf.cli benchmark --model resnet50 --framework pytorch
+
+# View results
+python -m mlperf.cli results --latest
+```
+
+## Key Features Ready to Use
+
+**Hardware Detection** - GPU, CPU, memory monitoring
+**Performance Optimization** - Distributed training recommendations
+**Memory Tracking** - Real-time usage analysis
+**AI Recommendations** - OpenAI-powered suggestions
+**REST API** - Production-ready endpoints
+**CLI Tools** - Developer-friendly commands
+**Docker Deployment** - Scalable container architecture
+**Real-time Monitoring** - Grafana dashboards
+
+## Example Usage
+
+### Python API
+
+```python
+from mlperf.optimization import DistributedOptimizer
+from mlperf.hardware import get_gpu_info
+
+# Initialize optimizer
+optimizer = DistributedOptimizer()
+
+# Get hardware information
+gpus = get_gpu_info()
+print(f"Detected {len(gpus)} GPUs")
+
+# Optimize for your model
+config = optimizer.optimize_model_parallel(
+    model_size_gb=7.5,
+    num_gpus=len(gpus),
+    device_memory_gb=gpus[0].memory_gb if gpus else 0
+)
+```
+
+### REST API
+
+```bash
+# Get system metrics
 curl http://localhost:8000/system/metrics
 
-# Performance analysis
-curl -X POST http://localhost:8000/analyze/performance \
+# Start a benchmark
+curl -X POST http://localhost:8000/benchmarks \
   -H "Content-Type: application/json" \
-  -d '{
-    "framework": "pytorch",
-    "batch_size": 32,
-    "model_config": {"size_gb": 1.5},
-    "hardware_info": {}
-  }'
-
-# API documentation
-open http://localhost:8000/docs
+  -d '{"model": "bert-base", "framework": "pytorch"}'
 ```
 
-### Docker Deployment
-```bash
-# Build container
-docker build -f docker/Dockerfile -t mlperf:latest .
+## Next Steps
 
-# Full stack
-docker-compose up -d
+1. **Explore the Web Interface** - Navigate to http://localhost:8000
+2. **Read the Documentation** - Check out [ARCHITECTURE.md](ARCHITECTURE.md)
+3. **Run Benchmarks** - Try different models and frameworks
+4. **Configure for Production** - See [ENTERPRISE_DEPLOYMENT_GUIDE.md](ENTERPRISE_DEPLOYMENT_GUIDE.md)
 
-# Access services
-# - API: http://localhost:8000
-# - Grafana: http://localhost:3000
-# - Prometheus: http://localhost:9090
-```
-
-## 🧪 Testing
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Verify installation
-python verify_installation.py
-
-# Integration tests
-python -m pytest tests/test_integration.py -v
-```
-
-## 📊 Key Features Ready to Use
-
-✅ **Hardware Detection** - GPU, CPU, memory monitoring  
-✅ **Performance Optimization** - Distributed training recommendations  
-✅ **Memory Tracking** - Real-time usage analysis  
-✅ **AI Recommendations** - OpenAI-powered suggestions  
-✅ **REST API** - Production-ready endpoints  
-✅ **CLI Tools** - Developer-friendly commands  
-✅ **Docker Deployment** - Scalable container architecture  
-✅ **Real-time Monitoring** - Grafana dashboards  
-
-## 🔧 Configuration
-
-### Environment Variables
-```bash
-export OPENAI_API_KEY="your-api-key"
-export LOG_LEVEL="INFO"
-export REDIS_URL="redis://localhost:6379"
-```
-
-### Sample Config (config.json)
-```json
-{
-  "framework": "pytorch",
-  "model_size_gb": 2.5,
-  "num_gpus": 2,
-  "batch_size": 32,
-  "optimization": {
-    "enable_mixed_precision": true,
-    "enable_gradient_checkpointing": true,
-    "zero_stage": 2
-  }
-}
-```
-
----
-
-**🎉 Platform is production-ready with 24/35 tests passing and all core features operational!** 
+**Platform is production-ready with comprehensive testing and all core features operational!** 

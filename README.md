@@ -8,11 +8,11 @@
 A comprehensive platform for optimizing and monitoring machine learning workloads across distributed systems with AI-powered recommendations.
 
 **Key Features**:
-- 🚀 **Distributed Training Optimization**: Automatic communication, model & data parallelism
-- 🤖 **AI-Powered Insights**: OpenAI integration for performance recommendations
-- 📊 **Real-time Monitoring**: GPU/CPU/memory/network metrics
-- ⚡ **Benchmarking Suite**: Comprehensive training & inference benchmarks
-- 🛠️ **Multi-Framework Support**: PyTorch, TensorFlow, JAX
+- **Distributed Training Optimization**: Automatic communication, model & data parallelism
+- **AI-Powered Insights**: OpenAI integration for performance recommendations
+- **Real-time Monitoring**: GPU/CPU/memory/network metrics
+- **Benchmarking Suite**: Comprehensive training & inference benchmarks
+- **Multi-Framework Support**: PyTorch, TensorFlow, JAX
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ Nik Jois <nikjois@llamasearch.ai>
 
 ---
 
-💡 **Professional Support**: Available for enterprise deployments - contact nikjois@llamasearch.ai
+**Professional Support**: Available for enterprise deployments - contact nikjois@llamasearch.ai
 
 Apache License
 Version 2.0, January 2004
