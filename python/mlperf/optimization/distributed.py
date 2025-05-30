@@ -169,8 +169,19 @@ class NodeInfo:
             cpu_cores = os.cpu_count() or 0
             memory_gb = 0.0
         
-        # Estimate network bandwidth (placeholder)
-        network_bandwidth_gbps = 10.0
+        # Estimate network bandwidth using basic system information
+        network_bandwidth_gbps = 1.0  # Default to 1 Gbps
+        try:
+            import psutil
+            net_if_stats = psutil.net_if_stats()
+            for interface, stats in net_if_stats.items():
+                if stats.speed > 0 and not interface.startswith('lo'):
+                    # Convert Mbps to Gbps
+                    speed_gbps = stats.speed / 1000.0
+                    if speed_gbps > network_bandwidth_gbps:
+                        network_bandwidth_gbps = speed_gbps
+        except (ImportError, AttributeError):
+            pass
         
         return cls(
             hostname=hostname,
@@ -410,6 +421,91 @@ class DistributedOptimizer:
         
         logger.info(f"Optimized communication settings: {optimized}")
         return optimized
+
+    def optimize_memory(self, model, optimizer):
+        """Optimize memory usage for distributed training."""
+        if self.framework == "pytorch":
+            self._optimize_pytorch_memory(model, optimizer)
+        elif self.framework == "tensorflow":
+            self._optimize_tensorflow_memory(model, optimizer)
+        else:
+            raise ValueError(f"Unsupported framework: {self.framework}")
+
+    def _optimize_pytorch_memory(self, model, optimizer):
+        """Optimize PyTorch memory usage."""
+        if not TORCH_AVAILABLE:
+            raise ImportError("PyTorch not available")
+        
+        # Apply activation checkpointing if enabled
+        if self.config.enable_activation_checkpointing:
+            try:
+                from torch.utils.checkpoint import checkpoint_sequential
+                
+                # Find sequential modules suitable for checkpointing
+                sequential_modules = []
+                for name, module in model.named_children():
+                    if isinstance(module, torch.nn.Sequential) and len(list(module.children())) > 2:
+                        sequential_modules.append((name, module))
+                
+                # Apply checkpointing to suitable modules
+                for name, module in sequential_modules:
+                    if hasattr(module, '__len__') and len(module) > 2:
+                        # Create checkpointed version of the module
+                        segments = len(module) // 2  # Checkpoint every 2 layers
+                        checkpointed_module = lambda x: checkpoint_sequential(module, segments, x)
+                        setattr(model, name, checkpointed_module)
+                
+                logger.info(f"Applied activation checkpointing to {len(sequential_modules)} modules")
+            except Exception as e:
+                logger.error(f"Failed to apply activation checkpointing: {e}")
+        
+        # Apply CPU offloading if enabled
+        if self.config.enable_offloading and self.config.cpu_offload_params:
+            try:
+                device = next(model.parameters()).device
+                cpu_parameters = {}
+                
+                # Move infrequently used parameters to CPU
+                for name, param in model.named_parameters():
+                    if any(x in name.lower() for x in ['embedding', 'classifier', 'norm']):
+                        cpu_parameters[name] = param.data.clone()
+                        param.data = param.data.to('cpu')
+                        if self.config.cpu_offload_use_pin_memory:
+                            cpu_parameters[name] = cpu_parameters[name].pin_memory()
+                
+                logger.info(f"Applied CPU parameter offloading to {len(cpu_parameters)} parameters")
+            except Exception as e:
+                logger.error(f"Failed to apply CPU offloading: {e}")
+        
+        # Apply memory-efficient optimizer if enabled
+        if self.config.memory_efficient_optimizer and optimizer is not None:
+            try:
+                if isinstance(optimizer, torch.optim.Adam):
+                    try:
+                        from torch.optim import AdamW
+                        
+                        # Get current optimizer configuration
+                        state_dict = optimizer.state_dict()
+                        param_groups = optimizer.param_groups
+                        
+                        # Create new optimizer with better memory efficiency
+                        new_optimizer = AdamW(
+                            model.parameters(),
+                            lr=param_groups[0]['lr'],
+                            betas=param_groups[0].get('betas', (0.9, 0.999)),
+                            eps=param_groups[0].get('eps', 1e-8),
+                            weight_decay=param_groups[0].get('weight_decay', 0),
+                            amsgrad=param_groups[0].get('amsgrad', False)
+                        )
+                        
+                        new_optimizer.load_state_dict(state_dict)
+                        optimizer = new_optimizer
+                        
+                        logger.info("Replaced optimizer with memory-efficient AdamW")
+                    except ImportError:
+                        logger.warning("Memory-efficient AdamW not available")
+            except Exception as e:
+                logger.error(f"Failed to apply memory-efficient optimizer: {e}")
 
 class MemoryTracker:
     """Tracks memory usage during training and inference."""
