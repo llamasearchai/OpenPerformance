@@ -180,7 +180,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 @app.post("/analyze/performance", 
           response_model=List[OptimizationRecommendation],
           dependencies=[Depends(require_user)])
-# @limiter.limit("100/hour")  # Temporarily disabled for testing
+# @limiter.limit("100/hour")  # Disabled for testing compatibility
 async def analyze_performance(
     request: PerformanceRequest,
     current_user: User = Depends(get_current_user)
