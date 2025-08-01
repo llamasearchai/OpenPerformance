@@ -140,7 +140,7 @@ def demo_ai_recommendations():
     # Check if OpenAI API key is available
     config = get_config()
     if not config.openai_api_key:
-        print("⚠️  OpenAI API key not set - using simulated recommendations")
+        print("WARNING: OpenAI API key not set - using simulated recommendations")
         recommendations = [
             "Enable gradient checkpointing to reduce memory usage by ~30%",
             "Use mixed precision training (FP16) to improve performance",
@@ -174,7 +174,7 @@ def demo_ai_recommendations():
             total_runtime=22.9
         )
     
-    print("🎯 Optimization Recommendations:")
+    print("Optimization Recommendations:")
     for i, rec in enumerate(recommendations, 1):
         print(f"  {i}. {rec}")
 
@@ -279,7 +279,7 @@ def create_sample_config():
 
 def main():
     """Run the comprehensive demo."""
-    print("🚀 ML Performance Engineering Platform - Comprehensive Demo")
+    print("ML Performance Engineering Platform - Comprehensive Demo")
     print("=" * 60)
     
     # Setup logging
@@ -301,14 +301,14 @@ def main():
         config_file = create_sample_config()
         
         print_section("DEMO SUMMARY")
-        print("✅ Hardware detection and monitoring")
-        print("✅ Performance optimization recommendations")
-        print("✅ Memory usage tracking")
-        print("✅ AI-powered analysis")
-        print("✅ Command-line interface")
-        print("✅ REST API integration")
-        print("✅ Docker deployment")
-        print("✅ Configuration management")
+        print("SUCCESS: Hardware detection and monitoring")
+        print("SUCCESS: Performance optimization recommendations")
+        print("SUCCESS: Memory usage tracking")
+        print("SUCCESS: AI-powered analysis")
+        print("SUCCESS: Command-line interface")
+        print("SUCCESS: REST API integration")
+        print("SUCCESS: Docker deployment")
+        print("SUCCESS: Configuration management")
         
         print_section("NEXT STEPS")
         print("1. Try the CLI commands:")
@@ -337,10 +337,10 @@ def main():
             
     except Exception as e:
         logger.error(f"Demo failed: {e}")
-        print(f"\n❌ Demo failed: {e}")
+        print(f"\nERROR: Demo failed: {e}")
         return 1
     
-    print(f"\n🎉 Demo completed successfully!")
+    print(f"\nDemo completed successfully!")
     return 0
 
 if __name__ == "__main__":

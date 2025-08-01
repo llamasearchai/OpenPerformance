@@ -1,0 +1,30 @@
+site_name: OpenPerformance
+site_description: ML Performance Engineering Platform
+site_author: Nik Jois
+site_url: https://llamasearchai.github.io/OpenPerformance/
+
+repo_name: llamasearchai/OpenPerformance
+repo_url: https://github.com/llamasearchai/OpenPerformance
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+nav:
+  - Home: index.md
+
+markdown_extensions:
+  - codehilite
+  - admonition
+  - toc:
+      permalink: true
+
+plugins:
+  - search

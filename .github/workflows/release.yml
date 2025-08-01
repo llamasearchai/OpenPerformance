@@ -35,6 +35,7 @@ jobs:
         twine upload dist/*
 
     - name: Create GitHub Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,6 +76,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/openperformance-${{ github.ref_name }}.tar.gz
+        asset_path: ./dist/openperformance-*.tar.gz
         asset_name: openperformance-${{ github.ref_name }}.tar.gz
         asset_content_type: application/gzip

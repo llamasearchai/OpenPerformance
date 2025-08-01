@@ -23,7 +23,7 @@ from typing import Optional, List
 def print_banner():
     """Print the platform banner."""
     banner = """
-🚀 ML Performance Engineering Platform
+ML Performance Engineering Platform
 ========================================
 Complete platform for ML optimization and monitoring
 Features: GPU monitoring, distributed optimization, AI recommendations
@@ -33,9 +33,9 @@ Features: GPU monitoring, distributed optimization, AI recommendations
 def check_python_version():
     """Check if Python version is compatible."""
     if sys.version_info < (3, 8):
-        print("❌ Python 3.8 or higher is required")
+        print("ERROR: Python 3.8 or higher is required")
         sys.exit(1)
-    print(f"✅ Python {sys.version.split()[0]} detected")
+    print(f"SUCCESS: Python {sys.version.split()[0]} detected")
 
 def check_dependencies():
     """Check if required dependencies are installed."""
@@ -47,13 +47,13 @@ def check_dependencies():
     for package in required_packages:
         try:
             __import__(package)
-            print(f"✅ {package} available")
+            print(f"SUCCESS: {package} available")
         except ImportError:
             missing_packages.append(package)
-            print(f"❌ {package} missing")
+            print(f"ERROR: {package} missing")
     
     if missing_packages:
-        print(f"\n💡 Install missing packages with:")
+        print(f"\nInstall missing packages with:")
         print(f"   pip install {' '.join(missing_packages)}")
         return False
     
@@ -73,19 +73,19 @@ def check_optional_dependencies():
     for package, description in optional_packages.items():
         try:
             __import__(package)
-            print(f"✅ {package} - {description}")
+            print(f"SUCCESS: {package} - {description}")
         except ImportError:
-            print(f"⚠️  {package} - {description} (optional)")
+            print(f"WARNING: {package} - {description} (optional)")
 
 def setup_environment():
     """Set up the environment variables and directories."""
-    print("\n🔧 Setting up environment...")
+    print("\nSetting up environment...")
     
     # Create necessary directories
     directories = ["cache", "logs", "outputs", "results"]
     for directory in directories:
         Path(directory).mkdir(exist_ok=True)
-        print(f"✅ Created directory: {directory}")
+        print(f"SUCCESS: Created directory: {directory}")
     
     # Set environment variables
     env_vars = {
@@ -97,29 +97,29 @@ def setup_environment():
     
     for key, value in env_vars.items():
         os.environ[key] = value
-        print(f"✅ Set {key}={value}")
+        print(f"SUCCESS: Set {key}={value}")
 
 def run_verification():
     """Run the verification script."""
-    print("\n🔍 Running verification...")
+    print("\nRunning verification...")
     try:
         result = subprocess.run([
             sys.executable, "verify_installation.py"
         ], capture_output=True, text=True, timeout=30)
         
         if result.returncode == 0:
-            print("✅ Verification passed")
+            print("SUCCESS: Verification passed")
             return True
         else:
-            print("❌ Verification failed")
+            print("ERROR: Verification failed")
             print(result.stdout)
             print(result.stderr)
             return False
     except subprocess.TimeoutExpired:
-        print("⏰ Verification timed out")
+        print("TIMEOUT: Verification timed out")
         return False
     except Exception as e:
-        print(f"❌ Verification error: {e}")
+        print(f"ERROR: Verification error: {e}")
         return False
 
 def run_demo():
@@ -131,16 +131,16 @@ def run_demo():
         ], timeout=60)
         
         if result.returncode == 0:
-            print("✅ Demo completed successfully")
+            print("SUCCESS: Demo completed successfully")
             return True
         else:
-            print("❌ Demo failed")
+            print("ERROR: Demo failed")
             return False
     except subprocess.TimeoutExpired:
-        print("⏰ Demo timed out")
+        print("TIMEOUT: Demo timed out")
         return False
     except Exception as e:
-        print(f"❌ Demo error: {e}")
+        print(f"ERROR: Demo error: {e}")
         return False
 
 def start_api_server(port: int = 8000, reload: bool = True):
@@ -158,7 +158,7 @@ def start_api_server(port: int = 8000, reload: bool = True):
         cmd.append("--reload")
     
     try:
-        print(f"🚀 API server starting at http://localhost:{port}")
+        print(f"INFO: API server starting at http://localhost:{port}")
         print("📚 API documentation at http://localhost:{port}/docs")
         subprocess.run(cmd)
     except KeyboardInterrupt:
@@ -169,19 +169,19 @@ def start_docker_services():
     print("\n🐳 Starting Docker services...")
     
     if not subprocess.run(["docker", "--version"], capture_output=True).returncode == 0:
-        print("❌ Docker not available")
+        print("ERROR: Docker not available")
         return False
     
     try:
         # Build and start services
         subprocess.run(["docker-compose", "up", "--build", "-d"], check=True)
-        print("✅ Docker services started")
+        print("SUCCESS: Docker services started")
         
         # Wait for services to be ready
         print("⏳ Waiting for services to be ready...")
         time.sleep(10)
         
-        print("\n🎯 Services available at:")
+        print("\nServices available at:")
         print("  - API: http://localhost:8000")
         print("  - API Docs: http://localhost:8000/docs")
         print("  - Grafana: http://localhost:3000 (admin/admin123)")
@@ -189,7 +189,7 @@ def start_docker_services():
         
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ Docker services failed: {e}")
+        print(f"ERROR: Docker services failed: {e}")
         return False
 
 def run_tests():
@@ -201,22 +201,22 @@ def run_tests():
         ], timeout=120)
         
         if result.returncode == 0:
-            print("✅ All tests passed")
+            print("SUCCESS: All tests passed")
             return True
         else:
-            print("⚠️ Some tests failed")
+            print("WARNING: Some tests failed")
             return False
     except subprocess.TimeoutExpired:
-        print("⏰ Tests timed out")
+        print("TIMEOUT: Tests timed out")
         return False
     except Exception as e:
-        print(f"❌ Test error: {e}")
+        print(f"ERROR: Test error: {e}")
         return False
 
 def show_usage_examples():
     """Show usage examples."""
     examples = """
-🎯 Quick Usage Examples:
+Quick Usage Examples:
 
 1. CLI Commands:
    python -m python.mlperf.cli.main info
@@ -284,21 +284,21 @@ def main():
     
     if args.mode in ["check", "full"]:
         if not check_dependencies():
-            print("\n❌ Please install missing dependencies first")
+            print("\nERROR: Please install missing dependencies first")
             sys.exit(1)
         check_optional_dependencies()
     
     if args.mode in ["demo", "full"]:
         if not run_verification():
-            print("⚠️ Verification failed, but continuing...")
+            print("WARNING: Verification failed, but continuing...")
         
         if not run_demo():
-            print("⚠️ Demo failed, but continuing...")
+            print("WARNING: Demo failed, but continuing...")
             success = False
     
     if args.mode in ["test", "full"] and not args.skip_tests:
         if not run_tests():
-            print("⚠️ Some tests failed, but continuing...")
+            print("WARNING: Some tests failed, but continuing...")
             success = False
     
     if args.mode == "api":
@@ -309,12 +309,12 @@ def main():
             success = False
     
     elif args.mode == "full":
-        print("\n🎉 Platform setup complete!")
+        print("\nPlatform setup complete!")
         
         if success:
-            print("✅ All components working correctly")
+            print("SUCCESS: All components working correctly")
         else:
-            print("⚠️ Some components had issues (check logs)")
+            print("WARNING: Some components had issues (check logs)")
         
         show_usage_examples()
         

@@ -12,15 +12,15 @@ from pathlib import Path
 
 def print_success(message):
     """Print success message in green."""
-    print(f"✅ {message}")
+    print(f"SUCCESS: {message}")
 
 def print_error(message):
     """Print error message in red."""
-    print(f"❌ {message}")
+    print(f"ERROR: {message}")
 
 def print_warning(message):
     """Print warning message in yellow."""
-    print(f"⚠️  {message}")
+    print(f"WARNING: {message}")
 
 def print_info(message):
     """Print info message."""
@@ -361,14 +361,14 @@ def main():
     print(f"Tests passed: {passed}/{total}")
     
     if passed == total:
-        print_success("🎉 All tests passed! The installation is working correctly.")
+        print_success("All tests passed! The installation is working correctly.")
         print_info("You can now:")
         print_info("  - Run CLI commands: python -m python.mlperf.cli.main --help")
         print_info("  - Start the API server: uvicorn python.mlperf.api.main:app --reload")
         print_info("  - Run the full stack: docker-compose up")
         return 0
     else:
-        print_error(f"❌ {total - passed} tests failed. Please check the errors above.")
+        print_error(f"{total - passed} tests failed. Please check the errors above.")
         print_info("Common issues:")
         print_info("  - Missing dependencies (install with: poetry install)")
         print_info("  - GPU libraries not available (install PyTorch, TensorFlow, etc.)")
