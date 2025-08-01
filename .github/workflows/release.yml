@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload dist/*
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## OpenPerformance v${{ github.ref_name }}
+          
+          ### What's New
+          - Complete ML Performance Engineering Platform
+          - Hardware monitoring (CPU, memory, GPU)
+          - AI-powered optimization recommendations
+          - Distributed training optimization
+          - Comprehensive CLI interface
+          - REST API with authentication
+          - All tests passing (43/43)
+          
+          ### Installation
+          ```bash
+          pip install openperformance
+          ```
+          
+          ### Quick Start
+          ```bash
+          mlperf info
+          mlperf optimize --framework pytorch --batch-size 32
+          ```
+          
+          ### Documentation
+          See [README.md](https://github.com/llamasearchai/OpenPerformance/blob/main/README.md) for full documentation.
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/openperformance-${{ github.ref_name }}.tar.gz
+        asset_name: openperformance-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip

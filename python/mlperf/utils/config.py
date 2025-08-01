@@ -2,16 +2,20 @@
 Configuration management for ML Performance Engineering Platform.
 
 This module handles API keys, environment variables, and system configuration.
+Enhanced with authentication and security settings.
 """
 
 import os
 import logging
 import json
 import yaml
-from typing import Optional, Dict, Any
+from functools import lru_cache
+from typing import Optional, Dict, Any, List
 from pathlib import Path
 from dotenv import load_dotenv
 from dataclasses import dataclass, asdict
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,9 +23,138 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+class Settings(BaseSettings):
+    """Enhanced application settings with authentication support."""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
+    
+    # Application settings
+    APP_NAME: str = "OpenPerformance"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = Field(False)
+    ENVIRONMENT: str = Field("development")
+    
+    # API settings
+    API_HOST: str = Field("0.0.0.0")
+    API_PORT: int = Field(8000)
+    API_PREFIX: str = Field("/api/v1")
+    API_WORKERS: int = Field(1)
+    API_RELOAD: bool = Field(False)
+    
+    # Security settings
+    SECRET_KEY: str = Field("dev-secret-key-change-in-production")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(7)
+    ALGORITHM: str = Field("HS256")
+    BCRYPT_ROUNDS: int = Field(12)
+    
+    # Database settings
+    DATABASE_URL: str = Field("sqlite:///mlperf.db")
+    DATABASE_POOL_SIZE: int = Field(10)
+    DATABASE_MAX_OVERFLOW: int = Field(20)
+    DATABASE_POOL_PRE_PING: bool = Field(True)
+    DATABASE_ECHO: bool = Field(False)
+    
+    # Redis settings
+    REDIS_URL: str = Field("redis://localhost:6379/0")
+    REDIS_POOL_SIZE: int = Field(10)
+    REDIS_DECODE_RESPONSES: bool = Field(True)
+    CACHE_TTL: int = Field(300)
+    
+    # CORS settings
+    CORS_ORIGINS: List[str] = Field(["*"])
+    CORS_ALLOW_CREDENTIALS: bool = Field(True)
+    
+    # Logging settings
+    LOG_LEVEL: str = Field("INFO")
+    LOG_FORMAT: str = Field("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    LOG_FILE: Optional[str] = Field(None)
+    
+    # Rate limiting settings
+    RATE_LIMIT_ENABLED: bool = Field(True)
+    RATE_LIMIT_DEFAULT: str = Field("100/hour")
+    RATE_LIMIT_STORAGE_URL: Optional[str] = Field(None)
+    
+    # Security features
+    ENFORCE_HTTPS: bool = Field(False)
+    IP_WHITELIST: List[str] = Field([])
+    MAX_LOGIN_ATTEMPTS: int = Field(5)
+    LOCKOUT_DURATION_MINUTES: int = Field(30)
+    
+    # ML/GPU settings
+    CUDA_VISIBLE_DEVICES: Optional[str] = Field(None)
+    GPU_MEMORY_FRACTION: float = Field(0.9)
+    ENABLE_MIXED_PRECISION: bool = Field(True)
+    
+    # Feature flags
+    ENABLE_2FA: bool = Field(True)
+    ENABLE_API_KEYS: bool = Field(True)
+    ENABLE_AUDIT_LOGS: bool = Field(True)
+    
+    # API Keys
+    OPENAI_API_KEY: Optional[str] = Field(None)
+    ANTHROPIC_API_KEY: Optional[str] = Field(None)
+    WANDB_API_KEY: Optional[str] = Field(None)
+    
+    # Directory settings
+    CACHE_DIR: str = Field("./cache")
+    RESULTS_DIR: str = Field("./results")
+    OUTPUT_DIR: str = Field("./outputs")
+    
+    @field_validator("SECRET_KEY")
+    def validate_secret_key(cls, v: str) -> str:
+        """Validate secret key length."""
+        if v == "dev-secret-key-change-in-production":
+            logger.warning("Using default SECRET_KEY - change in production!")
+        elif len(v) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters long")
+        return v
+    
+    @field_validator("ENVIRONMENT")
+    def validate_environment(cls, v: str) -> str:
+        """Validate environment value."""
+        allowed = ["development", "staging", "production"]
+        if v not in allowed:
+            raise ValueError(f"ENVIRONMENT must be one of: {allowed}")
+        return v
+    
+    @field_validator("LOG_LEVEL")
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level."""
+        allowed = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if v.upper() not in allowed:
+            raise ValueError(f"LOG_LEVEL must be one of: {allowed}")
+        return v.upper()
+    
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production."""
+        return self.ENVIRONMENT == "production"
+    
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development."""
+        return self.ENVIRONMENT == "development"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+
+
+# Create settings instance
+settings = get_settings()
+
+
 @dataclass
 class Config:
-    """Main configuration class."""
+    """Legacy configuration class for backward compatibility."""
     openai_api_key: Optional[str] = None
     log_level: str = "INFO"
     log_file: Optional[str] = None
@@ -72,14 +205,16 @@ class Config:
                 json.dump(data, f, indent=2)
 
 
+# Legacy functions for backward compatibility
 def get_openai_api_key() -> Optional[str]:
     """Get OpenAI API key from environment or config."""
-    return os.getenv("OPENAI_API_KEY")
+    return settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
 
 
 def get_anthropic_api_key() -> Optional[str]:
     """Get Anthropic API key from environment variables."""
     return (
+        settings.ANTHROPIC_API_KEY or
         os.getenv("ANTHROPIC_API_KEY") or 
         os.getenv("MLPERF_ANTHROPIC_KEY")
     )
@@ -88,6 +223,7 @@ def get_anthropic_api_key() -> Optional[str]:
 def get_wandb_api_key() -> Optional[str]:
     """Get Weights & Biases API key from environment variables."""
     return (
+        settings.WANDB_API_KEY or
         os.getenv("WANDB_API_KEY") or 
         os.getenv("MLPERF_WANDB_KEY")
     )
@@ -100,29 +236,29 @@ def get_mlflow_tracking_uri() -> str:
 
 def get_redis_url() -> str:
     """Get Redis connection URL."""
-    return os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    return settings.REDIS_URL
 
 
 def get_database_url() -> str:
     """Get database connection URL."""
-    return os.getenv("DATABASE_URL", "sqlite:///mlperf.db")
+    return settings.DATABASE_URL
 
 
 def get_log_level() -> str:
     """Get logging level from environment."""
-    return os.getenv("LOG_LEVEL", "INFO").upper()
+    return settings.LOG_LEVEL
 
 
 def get_cache_directory() -> Path:
     """Get cache directory path."""
-    cache_dir = Path(os.getenv("MLPERF_CACHE_DIR", "~/.cache/mlperf")).expanduser()
+    cache_dir = Path(settings.CACHE_DIR).expanduser()
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
 
 
 def get_output_directory() -> Path:
     """Get output directory for results."""
-    output_dir = Path(os.getenv("MLPERF_OUTPUT_DIR", "./outputs")).expanduser()
+    output_dir = Path(settings.OUTPUT_DIR).expanduser()
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -142,10 +278,10 @@ def get_distributed_config() -> Dict[str, Any]:
 def get_gpu_config() -> Dict[str, Any]:
     """Get GPU configuration."""
     return {
-        "cuda_visible_devices": os.getenv("CUDA_VISIBLE_DEVICES"),
-        "gpu_memory_fraction": float(os.getenv("GPU_MEMORY_FRACTION", "0.8")),
+        "cuda_visible_devices": settings.CUDA_VISIBLE_DEVICES,
+        "gpu_memory_fraction": settings.GPU_MEMORY_FRACTION,
         "allow_growth": os.getenv("GPU_ALLOW_GROWTH", "true").lower() == "true",
-        "mixed_precision": os.getenv("MIXED_PRECISION", "false").lower() == "true",
+        "mixed_precision": settings.ENABLE_MIXED_PRECISION,
     }
 
 
@@ -167,7 +303,7 @@ def get_optimization_config() -> Dict[str, Any]:
     return {
         "enable_activation_checkpointing": os.getenv("ACTIVATION_CHECKPOINTING", "false").lower() == "true",
         "enable_gradient_compression": os.getenv("GRADIENT_COMPRESSION", "false").lower() == "true",
-        "enable_mixed_precision": os.getenv("MIXED_PRECISION", "false").lower() == "true",
+        "enable_mixed_precision": settings.ENABLE_MIXED_PRECISION,
         "enable_cpu_offload": os.getenv("CPU_OFFLOAD", "false").lower() == "true",
         "bucket_size_mb": int(os.getenv("BUCKET_SIZE_MB", "25")),
         "compression_ratio": float(os.getenv("COMPRESSION_RATIO", "0.01")),
@@ -177,12 +313,12 @@ def get_optimization_config() -> Dict[str, Any]:
 def get_api_config() -> Dict[str, Any]:
     """Get API server configuration."""
     return {
-        "host": os.getenv("API_HOST", "0.0.0.0"),
-        "port": int(os.getenv("API_PORT", "8000")),
-        "workers": int(os.getenv("API_WORKERS", "1")),
-        "reload": os.getenv("API_RELOAD", "false").lower() == "true",
-        "debug": os.getenv("API_DEBUG", "false").lower() == "true",
-        "cors_origins": os.getenv("CORS_ORIGINS", "*").split(","),
+        "host": settings.API_HOST,
+        "port": settings.API_PORT,
+        "workers": settings.API_WORKERS,
+        "reload": settings.API_RELOAD,
+        "debug": settings.DEBUG,
+        "cors_origins": settings.CORS_ORIGINS,
     }
 
 
@@ -200,10 +336,10 @@ def get_monitoring_config() -> Dict[str, Any]:
 def get_security_config() -> Dict[str, Any]:
     """Get security configuration."""
     return {
-        "secret_key": os.getenv("SECRET_KEY", "dev-secret-key-change-in-production"),
+        "secret_key": settings.SECRET_KEY,
         "enable_auth": os.getenv("ENABLE_AUTH", "false").lower() == "true",
-        "jwt_expiry_hours": int(os.getenv("JWT_EXPIRY_HOURS", "24")),
-        "rate_limit": os.getenv("RATE_LIMIT", "100/minute"),
+        "jwt_expiry_hours": settings.ACCESS_TOKEN_EXPIRE_MINUTES / 60,
+        "rate_limit": settings.RATE_LIMIT_DEFAULT,
     }
 
 
@@ -226,4 +362,4 @@ def reload_config() -> Config:
     """Reload configuration from environment variables."""
     global config
     config = Config()
-    return config 
+    return config

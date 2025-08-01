@@ -23,6 +23,11 @@ from ..optimization.distributed import (
     MemoryConfig,
     MemoryTracker
 )
+try:
+    from .shell_gpt_cli import OpenPerformanceShellGPT, shell_gpt_app
+except ImportError:
+    OpenPerformanceShellGPT = None
+    shell_gpt_app = None
 
 # Initialize console and logger
 console = Console()
@@ -433,6 +438,69 @@ def version() -> None:
     from .. import __version__, __description__
     console.print(f"ML Performance Engineering Platform v{__version__}")
     console.print(__description__)
+
+@app.command()
+def gpt(
+    query: Optional[str] = typer.Argument(None, help="Query for AI assistant"),
+    execute: bool = typer.Option(False, "--execute", "-e", help="Execute suggested commands"),
+    interactive: bool = typer.Option(False, "--interactive", "-i", help="Start interactive mode"),
+) -> None:
+    """AI-powered shell assistance with GPT integration."""
+    try:
+        # Initialize Shell-GPT
+        shell_gpt = OpenPerformanceShellGPT()
+        
+        if interactive or query is None:
+            # Interactive mode
+            shell_gpt.interactive_mode()
+        else:
+            # Single query mode
+            response = shell_gpt.process_command(query, execute=execute)
+            console.print(response)
+            
+    except Exception as e:
+        console.print(f"[red]Shell-GPT error: {e}[/red]")
+        raise typer.Exit(1)
+
+@app.command()
+def chat(
+    question: Optional[str] = typer.Argument(None, help="Question to ask AI agents"),
+    agent: str = typer.Option("auto", "--agent", "-a", help="Specific agent (auto/benchmark/optimization/performance)"),
+) -> None:
+    """Chat with specialized ML performance AI agents."""
+    try:
+        # Initialize Shell-GPT for agent access
+        shell_gpt = OpenPerformanceShellGPT()
+        
+        if question:
+            # Process single question
+            if agent != "auto":
+                question = f"[{agent}] {question}"
+            
+            response = shell_gpt._handle_performance_query(question)
+            console.print(response)
+        else:
+            # Interactive chat mode
+            console.print("[bold cyan]OpenPerformance AI Chat[/bold cyan]")
+            console.print("Chat with ML performance engineering experts")
+            console.print("Type 'exit' to quit\n")
+            
+            from rich.prompt import Prompt
+            
+            while True:
+                user_input = Prompt.ask("[bold green]You[/bold green]")
+                
+                if user_input.lower() in ["exit", "quit", "q"]:
+                    break
+                
+                response = shell_gpt._handle_performance_query(user_input)
+                console.print(f"\n[bold blue]AI Assistant[/bold blue]")
+                console.print(response)
+                console.print()
+                
+    except Exception as e:
+        console.print(f"[red]AI chat error: {e}[/red]")
+        raise typer.Exit(1)
 
 @app.callback()
 def main(

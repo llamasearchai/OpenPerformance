@@ -1,8 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
 from python.mlperf.api.main import app
+from python.mlperf.api import main as api_main
+from starlette.requests import Request
+
+# Remove RateLimitMiddleware for testing
+app.user_middleware = [
+    m for m in app.user_middleware
+    if m.cls.__name__ != "RateLimitMiddleware"
+]
+app.middleware_stack = app.build_middleware_stack()
+
+def override_user_dependency(request: Request = None):
+    class DummyUser:
+        id = 1
+        username = "testuser"
+        is_active = True
+        is_superuser = False
+        role = "user"
+    return DummyUser()
+
+app.dependency_overrides[api_main.get_current_user] = override_user_dependency
+app.dependency_overrides[api_main.require_user] = override_user_dependency
 
 client = TestClient(app)
+
 
 def test_full_workflow():
     # Test system metrics endpoint
@@ -16,7 +38,7 @@ def test_full_workflow():
     analysis_request = {
         "framework": "pytorch",
         "batch_size": 32,
-        "model_config": {
+        "model_configuration": {
             "size_gb": 1.5,
             "layers": 24,
             "parameters": 175000000
@@ -25,7 +47,6 @@ def test_full_workflow():
             "gpus": [gpu for gpu in metrics["gpu_info"]]
         }
     }
-    
     analysis_response = client.post("/analyze/performance", json=analysis_request)
     assert analysis_response.status_code == 200
     recommendations = analysis_response.json()
@@ -37,7 +58,7 @@ def test_error_handling():
     invalid_request = {
         "framework": "invalid",
         "batch_size": 32,
-        "model_config": {},
+        "model_configuration": {},
         "hardware_info": {}
     }
     response = client.post("/analyze/performance", json=invalid_request)

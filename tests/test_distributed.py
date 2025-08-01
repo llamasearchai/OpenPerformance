@@ -309,18 +309,15 @@ class TestMemoryTracker:
     def test_pytorch_memory_no_cuda(self):
         """Test PyTorch memory tracking without CUDA."""
         with patch('python.mlperf.optimization.distributed.TORCH_AVAILABLE', True):
-            with patch('python.mlperf.hardware.gpu.MemoryUsage') as mock_memory_usage:
-                with patch('torch.cuda.is_available', return_value=False):
-                    tracker = MemoryTracker(framework="pytorch")
-                    
-                    memory_usage = tracker._get_pytorch_memory()
-                    
-                    # Should create MemoryUsage with CPU device
-                    mock_memory_usage.assert_called_once()
-                    args = mock_memory_usage.call_args[1]  # Get keyword arguments
-                    assert args["device"] == "cpu"
-                    assert args["total_bytes"] == 0
-                    assert args["used_bytes"] == 0
+            with patch('torch.cuda.is_available', return_value=False):
+                tracker = MemoryTracker(framework="pytorch")
+                
+                memory_usage = tracker._get_pytorch_memory()
+                
+                # Should return MemoryUsage with CPU device
+                assert memory_usage.device == "cpu"
+                assert memory_usage.total_bytes == 0
+                assert memory_usage.used_bytes == 0
 
 
 @pytest.fixture

@@ -1,0 +1,28 @@
+# Minimal requirements for OpenPerformance setup
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+typer[all]>=0.9.0
+numpy>=1.24.0
+pandas>=2.1.0
+psutil>=5.9.0
+rich>=13.6.0
+python-dotenv>=1.0.0
+PyYAML>=6.0.1
+httpx>=0.25.0
+aiofiles>=23.2.0
+redis>=5.0.0
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+prometheus-client>=0.19.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+slowapi>=0.1.9
+argon2-cffi>=23.1.0
+pyotp>=2.9.0
+openai>=1.20.0
+shell-gpt>=1.0.0
+# Skip heavy ML frameworks for now
+# torch, tensorflow, etc. can be installed separately

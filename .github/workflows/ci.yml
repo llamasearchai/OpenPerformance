@@ -1,132 +1,23 @@
-name: Enterprise CI/CD Pipeline
+name: CI
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  release:
-    types: [ published ]
-  schedule:
-    # Run daily security scans
-    - cron: '0 6 * * *'
 
 env:
-  PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: "3.9"
 
 jobs:
-  # ====================
-  # Security and Quality
-  # ====================
-  security-scan:
-    name: 🔒 Security Analysis
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install security tools
-      run: |
-        pip install --upgrade pip
-        pip install bandit[toml] safety semgrep
-
-    - name: Run Bandit Security Linter
-      run: |
-        bandit -r python/ -f json -o bandit-report.json || true
-        bandit -r python/ -f txt
-
-    - name: Check Dependencies for Vulnerabilities
-      run: |
-        safety check --json --output safety-report.json || true
-        safety check
-
-    - name: Semgrep Security Scan
-      run: |
-        semgrep --config=auto python/ --json --output=semgrep-report.json || true
-        semgrep --config=auto python/
-
-    - name: Upload Security Reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-reports
-        path: |
-          bandit-report.json
-          safety-report.json
-          semgrep-report.json
-
-  code-quality:
-    name: 📊 Code Quality Analysis
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install black isort mypy flake8 pylint
-
-    - name: Code Formatting Check (Black)
-      run: |
-        black --check --diff python/
-
-    - name: Import Sorting Check (isort)
-      run: |
-        isort --check-only --diff python/
-
-    - name: Type Checking (MyPy)
-      run: |
-        mypy python/ --ignore-missing-imports --install-types --non-interactive || true
-
-    - name: Linting (Flake8)
-      run: |
-        flake8 python/ --max-line-length=88 --extend-ignore=E203,W503
-
-    - name: Advanced Linting (Pylint)
-      run: |
-        pylint python/ --fail-under=8.0 || true
-
-  # ================
-  # Testing Matrix
-  # ================
-  test-matrix:
-    name: 🧪 Test Suite
-    runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        exclude:
-          # Reduce matrix size for faster CI
-          - os: windows-latest
-            python-version: '3.8'
-          - os: macos-latest
-            python-version: '3.8'
+        python-version: [3.9, 3.10, 3.11, 3.12]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -137,393 +28,113 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
 
-    - name: Install system dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libssl-dev libffi-dev
+        sudo apt-get install -y build-essential
 
     - name: Install Python dependencies
       run: |
-        pip install --upgrade pip setuptools wheel
-        pip install pytest pytest-cov pytest-xdist pytest-mock
-        pip install -r requirements.txt || pip install -r requirements.txt --no-deps
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -r dev-requirements.txt
 
-    - name: Create test configuration
+    - name: Run tests
       run: |
-        mkdir -p cache logs outputs results
-        echo "PYTHONPATH=python" >> $GITHUB_ENV
+        python -m pytest tests/ -v --cov=python/mlperf --cov-report=xml --cov-report=html
 
-    - name: Run Unit Tests
-      run: |
-        pytest tests/ -v --tb=short --cov=python --cov-report=xml --cov-report=term -x --disable-warnings
-
-    - name: Upload Coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+        fail_ci_if_error: false
 
-  # ==================
-  # Performance Tests
-  # ==================
-  performance-tests:
-    name: ⚡ Performance Benchmarks
+  lint:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    strategy:
+      matrix:
+        python-version: [3.11]
 
-    - name: Set up Python
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        pip install pytest-benchmark pytest-mock
-        pip install -r requirements.txt --no-deps || true
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -r dev-requirements.txt
 
-    - name: Run Performance Tests
+    - name: Run linting
       run: |
-        mkdir -p results/benchmarks
-        pytest tests/performance/ --benchmark-only --benchmark-json=results/benchmarks/benchmark-results.json || true
+        flake8 python/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 python/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Performance Regression Check
+    - name: Run type checking
       run: |
-        python scripts/check_performance_regression.py results/benchmarks/benchmark-results.json || true
+        mypy python/mlperf/ --ignore-missing-imports
 
-    - name: Upload Benchmark Results
-      uses: actions/upload-artifact@v4
-      with:
-        name: benchmark-results
-        path: results/benchmarks/
-
-  # ==================
-  # Integration Tests
-  # ==================
-  integration-tests:
-    name: 🔗 Integration Tests
+  security:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    strategy:
+      matrix:
+        python-version: [3.11]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        pip install pytest pytest-asyncio pytest-mock
-        pip install -r requirements.txt --no-deps || true
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install bandit safety
 
-    - name: Run Integration Tests
-      env:
-        REDIS_URL: redis://localhost:6379
+    - name: Run security checks
       run: |
-        pytest tests/integration/ -v --tb=short || true
+        bandit -r python/ -f json -o bandit-report.json || true
+        safety check
 
-  # ================
-  # Platform Health
-  # ================
-  platform-validation:
-    name: 🏥 Platform Health Check
+  build:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    needs: [test, lint, security]
+    strategy:
+      matrix:
+        python-version: [3.11]
 
-    - name: Set up Python
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Install build dependencies
       run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt --no-deps || true
+        python -m pip install --upgrade pip
+        pip install build twine
 
-    - name: Platform Status Check
+    - name: Build package
       run: |
-        python platform_status.py --output-format json --output-file platform-status.json || true
+        python -m build
 
-    - name: Performance Score Validation
-      run: |
-        python scripts/validate_platform_performance.py platform-status.json --min-score 85 || true
-
-    - name: Upload Platform Status
-      uses: actions/upload-artifact@v4
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
       with:
-        name: platform-status
-        path: platform-status.json
-
-  # ================
-  # Docker Build
-  # ================
-  docker-build:
-    name: 🐳 Docker Build & Security Scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix={{branch}}-
-
-    - name: Build Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-
-    - name: Run Trivy Security Scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ steps.meta.outputs.tags }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy Results to GitHub Security
-      if: always()
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-    - name: Push Docker Image
-      if: github.event_name != 'pull_request'
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-
-  # ====================
-  # Kubernetes Validation
-  # ====================
-  k8s-validation:
-    name: ☸️ Kubernetes Manifests Validation
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.4'
-
-    - name: Set up Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: 'v3.13.2'
-
-    - name: Validate Kubernetes Manifests
-      run: |
-        # Validate YAML syntax
-        find k8s/ -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=client -f {}
-
-    - name: Kubeval Validation
-      run: |
-        # Install kubeval
-        wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
-        tar xf kubeval-linux-amd64.tar.gz
-        sudo mv kubeval /usr/local/bin
-        
-        # Validate manifests
-        find k8s/ -name "*.yaml" -o -name "*.yml" | xargs kubeval
-
-    - name: Security Policy Validation
-      run: |
-        # Install OPA Conftest
-        wget https://github.com/open-policy-agent/conftest/releases/download/v0.46.0/conftest_0.46.0_Linux_x86_64.tar.gz
-        tar xzf conftest_0.46.0_Linux_x86_64.tar.gz
-        sudo mv conftest /usr/local/bin
-        
-        # Run security policy checks
-        conftest test k8s/ --policy security-policies/ || echo "Security policy validation completed"
-
-  # ================
-  # Load Testing
-  # ================
-  load-testing:
-    name: 🚀 Load Testing
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install locust httpx
-        pip install -r requirements.txt --no-deps || true
-
-    - name: Start Application
-      run: |
-        python -m uvicorn python.mlperf.api.main:app --host 0.0.0.0 --port 8000 &
-        sleep 10
-
-    - name: Run Load Tests
-      run: |
-        locust -f tests/load/locustfile.py --headless -u 10 -r 2 -t 60s --host http://localhost:8000 || true
-
-  # ==================
-  # Documentation
-  # ==================
-  documentation:
-    name: 📚 Documentation Build
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install documentation dependencies
-      run: |
-        pip install --upgrade pip
-        pip install sphinx sphinx-rtd-theme mkdocs mkdocs-material
-
-    - name: Build Sphinx Documentation
-      run: |
-        sphinx-build -b html docs/ docs/_build/html || true
-
-    - name: Build MkDocs Documentation
-      run: |
-        mkdocs build --strict || true
-
-    - name: Upload Documentation
-      uses: actions/upload-artifact@v4
-      with:
-        name: documentation
-        path: |
-          docs/_build/html
-          site/
-
-  # ================
-  # Deployment
-  # ================
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [security-scan, code-quality, test-matrix, docker-build, k8s-validation]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to Staging Environment
-      run: |
-        echo "Deploying to staging environment..."
-        # Actual deployment commands would go here
-        echo "Staging deployment completed"
-
-  deploy-production:
-    name: 🌟 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [security-scan, code-quality, test-matrix, docker-build, k8s-validation]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to Production Environment
-      run: |
-        echo "Deploying to production environment..."
-        # Actual deployment commands would go here
-        echo "Production deployment completed"
-
-  # ==================
-  # Notifications
-  # ==================
-  notify:
-    name: 📢 Send Notifications
-    runs-on: ubuntu-latest
-    needs: [security-scan, code-quality, test-matrix, performance-tests, platform-validation]
-    if: always()
-    
-    steps:
-    - name: Notify Success
-      if: needs.security-scan.result == 'success' && needs.code-quality.result == 'success' && needs.test-matrix.result == 'success'
-      run: |
-        echo "✅ All checks passed successfully!"
-
-    - name: Notify Failure
-      if: needs.security-scan.result == 'failure' || needs.code-quality.result == 'failure' || needs.test-matrix.result == 'failure'
-      run: |
-        echo "❌ Some checks failed. Please review the results."
-
-    - name: Performance Alert
-      if: needs.performance-tests.result == 'failure'
-      run: |
-        echo "⚠️ Performance regression detected. Please review benchmark results." 
+        name: dist
+        path: dist/

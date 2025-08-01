@@ -140,14 +140,14 @@ def setup_logging(
     
     if structured:
         formatters['structured'] = {
-            '()': 'python.mlperf.utils.logging.StructuredFormatter'
+            '()': 'mlperf.utils.logging.StructuredFormatter'
         }
     
     # Create filters
     filters = {}
     if enable_performance_filter:
         filters['performance'] = {
-            '()': 'python.mlperf.utils.logging.PerformanceFilter'
+            '()': 'mlperf.utils.logging.PerformanceFilter'
         }
     
     # Logging configuration
@@ -162,7 +162,7 @@ def setup_logging(
             'handlers': list(handlers.keys())
         },
         'loggers': {
-            'python.mlperf': {
+            'mlperf': {
                 'level': log_level,
                 'propagate': True
             },

@@ -1,0 +1,56 @@
+[build]
+target = "wheel"
+
+[envs.default]
+dependencies = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.9.0",
+    "isort>=5.12.0",
+    "mypy>=1.6.0",
+    "flake8>=6.1.0",
+    "pre-commit>=3.6.0",
+]
+
+[envs.default.scripts]
+test = "pytest {args:tests/}"
+test-cov = "pytest --cov=mlperf --cov-report=term-missing --cov-report=html {args:tests/}"
+lint = [
+    "black --check python/",
+    "isort --check-only python/",
+    "flake8 python/",
+]
+format = [
+    "black python/",
+    "isort python/",
+]
+typecheck = "mypy python/mlperf --ignore-missing-imports"
+all = ["format", "lint", "typecheck", "test-cov"]
+
+[envs.docs]
+dependencies = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+]
+
+[envs.docs.scripts]
+build = "sphinx-build -b html docs/ docs/_build/html"
+serve = "mkdocs serve"
+
+[envs.benchmark]
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.24.0",
+    "pandas>=2.1.0",
+    "psutil>=5.9.0",
+]
+
+[envs.benchmark.scripts]
+run = "python scripts/run_all_benchmarks.sh"
+training = "python scripts/benchmarks/training_benchmark.py"
+inference = "python scripts/benchmarks/inference_benchmark.py"
+distributed = "python scripts/benchmarks/distributed_benchmark.py"
