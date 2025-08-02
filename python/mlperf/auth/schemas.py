@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, ValidationInfo
 
 from mlperf.auth.models import UserRole
 
@@ -25,7 +25,7 @@ class UserCreate(UserBase):
     confirm_password: str
     
     @field_validator("confirm_password")
-    def passwords_match(cls, v: str, info) -> str:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
         """Validate that passwords match."""
         if "password" in info.data and v != info.data["password"]:
             raise ValueError("Passwords do not match")
@@ -123,7 +123,7 @@ class PasswordChange(BaseModel):
     confirm_password: str
     
     @field_validator("confirm_password")
-    def passwords_match(cls, v: str, info) -> str:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
         """Validate that passwords match."""
         if "new_password" in info.data and v != info.data["new_password"]:
             raise ValueError("Passwords do not match")
@@ -138,7 +138,7 @@ class PasswordReset(BaseModel):
     confirm_password: str
     
     @field_validator("confirm_password")
-    def passwords_match(cls, v: str, info) -> str:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
         """Validate that passwords match."""
         if "new_password" in info.data and v != info.data["new_password"]:
             raise ValueError("Passwords do not match")

@@ -4,7 +4,7 @@ import base64
 import io
 import secrets
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, cast
 
 import pyotp
 import qrcode
@@ -55,7 +55,7 @@ def generate_secure_token(length: int = 32) -> str:
 
 def generate_totp_secret() -> str:
     """Generate a TOTP secret."""
-    return pyotp.random_base32()
+    return str(pyotp.random_base32())
 
 
 def generate_totp_uri(
@@ -65,10 +65,10 @@ def generate_totp_uri(
 ) -> str:
     """Generate TOTP URI for QR code."""
     totp = pyotp.TOTP(secret)
-    return totp.provisioning_uri(
+    return str(totp.provisioning_uri(
         name=email,
         issuer_name=issuer
-    )
+    ))
 
 
 def generate_qr_code(uri: str) -> str:
@@ -95,7 +95,7 @@ def generate_qr_code(uri: str) -> str:
 def verify_totp(secret: str, code: str, window: int = 1) -> bool:
     """Verify a TOTP code."""
     totp = pyotp.TOTP(secret)
-    return totp.verify(code, valid_window=window)
+    return bool(totp.verify(code, valid_window=window))
 
 
 def generate_backup_codes(count: int = 10) -> List[str]:

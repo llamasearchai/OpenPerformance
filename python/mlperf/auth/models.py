@@ -74,6 +74,8 @@ class User(Base):
     
     def increment_failed_login(self) -> None:
         """Increment failed login attempts."""
+        if self.failed_login_attempts is None:
+            self.failed_login_attempts = 0
         self.failed_login_attempts += 1
     
     def reset_failed_login(self) -> None:
