@@ -5,7 +5,7 @@ A comprehensive platform for optimizing and monitoring machine learning workload
 across distributed systems.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __author__ = "ML Performance Engineering Team"
 __description__ = "A comprehensive platform for optimizing and monitoring ML workloads"
 
