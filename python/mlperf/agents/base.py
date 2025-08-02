@@ -1,5 +1,6 @@
 """Base classes for AI agents."""
 
+import asyncio
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
