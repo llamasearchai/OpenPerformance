@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-from python.mlperf.api.main import app
-from python.mlperf.api import main as api_main
+from mlperf.api.main import app
+from mlperf.api import main as api_main
 from starlette.requests import Request
 
 # Remove RateLimitMiddleware for testing
@@ -62,7 +62,8 @@ def test_error_handling():
         "hardware_info": {}
     }
     response = client.post("/analyze/performance", json=invalid_request)
-    assert response.status_code == 500
+    # With validation, invalid framework should return 400
+    assert response.status_code == 400
     
 def test_api_health():
     """Test basic API health."""

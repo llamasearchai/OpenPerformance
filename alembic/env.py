@@ -9,11 +9,11 @@ from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-# Import your models here
-from python.mlperf.auth.models import Base as AuthBase
-from python.mlperf.models import *
-from python.mlperf.utils.config import get_settings
-from python.mlperf.utils.database import Base
+# Import your models here (use installed package paths)
+from mlperf.auth.models import Base as AuthBase
+from mlperf.models import *
+from mlperf.utils.config import get_settings
+from mlperf.utils.database import Base
 
 # Get settings
 settings = get_settings()
@@ -22,8 +22,8 @@ settings = get_settings()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the database URL from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set the database URL from settings; ensure a default for CI if unset
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL or "sqlite:///mlperf.db")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
