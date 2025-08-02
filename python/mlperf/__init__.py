@@ -5,9 +5,9 @@ A comprehensive platform for optimizing and monitoring machine learning workload
 across distributed systems.
 """
 
-__version__ = "1.0.2"
-__author__ = "ML Performance Engineering Team"
-__description__ = "A comprehensive platform for optimizing and monitoring ML workloads"
+__version__ = "1.0.3"
+__author__ = "OpenPerformance Team"
+__description__ = "Enterprise-grade ML Performance Engineering Platform for optimization, monitoring, and deployment"
 
 # Core imports
 from .utils.logging import get_logger
@@ -18,4 +18,4 @@ logger = get_logger(__name__)
 
 def get_version() -> str:
     """Get the package version."""
-    return __version__ 
+    return __version__

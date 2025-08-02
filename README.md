@@ -2,9 +2,9 @@
 
 A comprehensive ML Performance Engineering Platform for optimizing and monitoring machine learning workloads.
 
-[![CI](https://github.com/llamasearchai/OpenPerformance/workflows/CI/badge.svg)](https://github.com/llamasearchai/OpenPerformance/actions)
-[![Release](https://github.com/llamasearchai/OpenPerformance/workflows/Release/badge.svg)](https://github.com/llamasearchai/OpenPerformance/releases)
-[![Docker](https://github.com/llamasearchai/OpenPerformance/workflows/Docker/badge.svg)](https://github.com/llamasearchai/OpenPerformance/packages)
+[![CI](https://github.com/openperformance/openperformance/actions/workflows/ci.yml/badge.svg)](https://github.com/openperformance/openperformance/actions/workflows/ci.yml)
+[![Release](https://github.com/openperformance/openperformance/actions/workflows/release.yml/badge.svg)](https://github.com/openperformance/openperformance/releases)
+[![Docs](https://github.com/openperformance/openperformance/actions/workflows/pages.yml/badge.svg)](https://github.com/openperformance/openperformance/actions/workflows/pages.yml)
 [![PyPI](https://img.shields.io/pypi/v/openperformance.svg)](https://pypi.org/project/openperformance/)
 [![Python](https://img.shields.io/pypi/pyversions/openperformance.svg)](https://pypi.org/project/openperformance/)
 
@@ -16,7 +16,7 @@ A comprehensive ML Performance Engineering Platform for optimizing and monitorin
 - **CLI Interface**: Comprehensive command-line tools
 - **REST API**: Full-featured API with authentication
 - **Cross-Platform**: Works on macOS, Linux, and Windows
-- **Production Ready**: All tests passing (43/43)
+- **Production Ready**: Continuous CI with tests, type checks, security scans
 
 ## Quick Start
 
@@ -27,8 +27,8 @@ A comprehensive ML Performance Engineering Platform for optimizing and monitorin
 pip install openperformance
 
 # Or install from source
-git clone https://github.com/llamasearchai/OpenPerformance.git
-cd OpenPerformance
+git clone https://github.com/openperformance/openperformance.git
+cd openperformance
 pip install -e .
 ```
 
@@ -42,7 +42,9 @@ mlperf info
 mlperf optimize --framework pytorch --batch-size 32
 
 # Start API server
-python -m uvicorn python.mlperf.api.main:app --host 0.0.0.0 --port 8000
+openperf-server
+# or explicitly via uvicorn with installed package path:
+# python -m uvicorn mlperf.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ## CLI Commands
@@ -102,7 +104,7 @@ git clone https://github.com/llamasearchai/OpenPerformance.git
 cd OpenPerformance
 
 # Create virtual environment
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
@@ -117,7 +119,7 @@ pip install -r dev-requirements.txt
 python -m pytest tests/ -v
 
 # Run with coverage
-python -m pytest tests/ --cov=python/mlperf --cov-report=html
+python -m pytest tests python/tests --cov=mlperf --cov-report=html --cov-report=term-missing
 
 # Run specific test categories
 python -m pytest tests/test_hardware.py -v
@@ -128,14 +130,15 @@ python -m pytest tests/test_integration.py -v
 
 ```bash
 # Linting
-flake8 python/ tests/
+black --check python/
+ruff check python/ tests/ python/tests/
 
 # Type checking
 mypy python/mlperf/
 
 # Security checks
-bandit -r python/
-safety check
+bandit -r python/mlperf
+pip-audit -e .
 ```
 
 ## Docker
@@ -267,9 +270,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Documentation**: [GitHub Wiki](https://github.com/llamasearchai/OpenPerformance/wiki)
-- **Issues**: [GitHub Issues](https://github.com/llamasearchai/OpenPerformance/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/llamasearchai/OpenPerformance/discussions)
+- **Documentation**: Site (GitHub Pages) coming from MkDocs
+- **Issues**: [GitHub Issues](https://github.com/openperformance/openperformance/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/openperformance/openperformance/discussions)
 
 ## Acknowledgments
 

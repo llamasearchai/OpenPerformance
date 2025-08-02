@@ -1,6 +1,5 @@
 # ---- OpenPerformance .gitignore ----
-# Generated to cover common Python, IDE and build artefacts
-# See https://github.com/github/gitignore/blob/main/Python.gitignore for reference
+# Reference: https://github.com/github/gitignore/blob/main/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -9,6 +8,8 @@ __pycache__/
 
 # C extensions
 *.so
+*.pyd
+*.dll
 
 # Distribution / packaging
 .Python
@@ -16,31 +17,38 @@ build/
 dist/
 *.egg-info/
 .eggs/
+.wheels/
+pip-wheel-metadata/
 
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit test / coverage / test cache
 htmlcov/
 .tox/
 .nox/
-.coverage*
+.coverage
+.coverage.*
 .cache/
 .pytest_cache/
-
-# MyPy, Pyre, Pytype
-.mypy_cache/
+coverage.xml
 .pyre/
 .pytype/
+
+# Type checking
+.mypy_cache/
 
 # Virtual environments
 .env
 .venv
 venv/
 ENV/
+env/
+.virtualenv/
+.python-version
 
-# Editor / IDE directories
+# Editor / IDE
 .vscode/
 .idea/
 *.sublime-project
@@ -48,14 +56,30 @@ ENV/
 
 # Operating system files
 .DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+Icon?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Project outputs
+# Node / Frontend (if present)
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/.vite/
+*.tsbuildinfo
+
+# Project outputs / local artifacts
 logs/
 outputs/
 results/
 cache/
 *.log
+tmp/
+temp/
 
 # Docker
 .dockerignore
@@ -63,22 +87,33 @@ cache/
 # Kubernetes
 *.kubeconfig
 
-# Secrets / credentials
+# Secrets / credentials (do not commit real secrets)
 *.pem
 *.key
 *.crt
 *.p12
 *.pfx
 config.env
+config.env.local
+.env.local
+.env.*.local
 
 # Documentation builds
 /site
 
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
+# Python packaging / build backends
+*.manifest
+*.spec
+
+# MkDocs local site
+site/
+
+# Tools caches
+.ruff_cache/
+.hypothesis/
+pytestdebug.log
+
+# Alembic migrations cache artifacts
+alembic/versions/__pycache__/
 
 # ------------------------------------
